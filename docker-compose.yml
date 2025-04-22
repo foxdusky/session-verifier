@@ -1,0 +1,37 @@
+services:
+    bot:
+        container_name: ${COMPOSE_PROJECT_NAME}-bot
+        networks:
+            project_network:
+        build:
+            context: .
+            dockerfile: ./Dockerfile
+        depends_on:
+            - db
+        command: bash -c python3 /app/src/main.py
+        restart: always
+        env_file:
+            - .env
+        volumes:
+            - ./src:/app/src
+            - ./.env:/app/.env
+
+    logs-viewer:
+        container_name: ${COMPOSE_PROJECT_NAME}-logs-viewer
+        restart: always
+        networks:
+            project_network:
+        image: amir20/dozzle
+        ports:
+            - "8070:8080"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ./logs-viewer-users.yml:/data/users.yml
+        environment:
+            DOZZLE_AUTH_PROVIDER: simple
+            DOZZLE_ENABLE_ACTIONS: true
+
+
+networks:
+    project_network:
+        name: ${COMPOSE_PROJECT_NAME}

@@ -1,0 +1,5 @@
+users:
+    admin:
+        email: ""
+        name: admin
+        password: $2a$11$pcywa3NmZu/BaqCfde0eN.G93aO5Q6himyIBWut62JjmyeK2LlHWa
