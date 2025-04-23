@@ -26,8 +26,8 @@ settings = Settings()  # type: ignore
 
 
 @cached_property
-def PROXY_LIST(self) -> None | list[Proxy]:
-    if self.USE_PROXY:
+def PROXY_LIST() -> None | list[Proxy]:
+    if settings.USE_PROXY:
         proxies: list[Proxy] = []
 
         with open(settings.PROXY_LIST_FILE, 'r', encoding='utf-8') as file:
@@ -49,7 +49,7 @@ def PROXY_LIST(self) -> None | list[Proxy]:
 
 
 @property
-def GET_RANDOM_PROXY(self):
+def GET_RANDOM_PROXY():
     if PROXY_LIST:
         _data = random.choice(PROXY_LIST)
 

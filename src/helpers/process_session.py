@@ -1,9 +1,10 @@
-import os
-import zipfile
-import json
 import asyncio
-import rarfile
+import json
+import os
 import re
+import zipfile
+
+import rarfile
 from telethon import TelegramClient
 from telethon.errors import PhoneCodeInvalidError, AuthRestartError
 
@@ -22,7 +23,6 @@ async def _process_session(phone: str, api_id: int, api_hash: str) -> Processing
         logger.info(f"[!] Нет session файла для {phone}, пропуск.")
         return None
     try:
-
         client1 = TelegramClient(old_session_path, api_id, api_hash)
         await client1.connect()
 
@@ -40,7 +40,7 @@ async def _process_session(phone: str, api_id: int, api_hash: str) -> Processing
             return None
 
         try:
-            sent = await client2.send_code_request(phone)
+            await client2.send_code_request(phone)
         except AuthRestartError:
             logger.info(f"[❌] Telegram требует перезапустить авторизацию для {phone}")
             await client2.disconnect()
@@ -91,12 +91,27 @@ async def _process_session(phone: str, api_id: int, api_hash: str) -> Processing
 async def process_archive(archive_name: str) -> list[ProcessingResult | None]:
     archive_path = os.path.join(settings.TEMP_DIR, archive_name)
     tasks = []
-    if archive_path.endswith('.rar'):
-        with rarfile.RarFile(archive_path) as rf:
-            rf.extractall(settings.TEMP_DIR)
-    else:
-        with zipfile.ZipFile(archive_path, 'r') as zf:
-            zf.extractall(settings.TEMP_DIR)
+
+    try:
+        if archive_path.endswith('.rar'):
+            with rarfile.RarFile(archive_path) as rf:
+                try:
+                    rf.extractall(settings.TEMP_DIR)
+                    logger.info(f"[✓] Архив {archive_name} успешно извлечен.")
+                except rarfile.BadRarFile as e:
+                    logger.error(f"[❌] Ошибка при извлечении RAR архива {archive_name}: {e}")
+                    return []
+        else:
+            with zipfile.ZipFile(archive_path, 'r') as zf:
+                try:
+                    zf.extractall(settings.TEMP_DIR)
+                    logger.info(f"[✓] Архив {archive_name} успешно извлечен.")
+                except zipfile.BadZipFile as e:
+                    logger.error(f"[❌] Ошибка при извлечении ZIP архива {archive_name}: {e}")
+                    return []
+    except FileNotFoundError:
+        logger.error(f"[❌] Архив {archive_name} не найден.")
+        return []
 
     for filename in os.listdir(settings.TEMP_DIR):
         if not filename.endswith('.json'):
@@ -113,7 +128,3 @@ async def process_archive(archive_name: str) -> list[ProcessingResult | None]:
         tasks.append(_process_session(phone, api_id, api_hash))
 
     return await asyncio.gather(*tasks)
-
-
-if __name__ == '__main__':
-    asyncio.run(process_archive("test.zip"))
