@@ -4,7 +4,6 @@ import random
 from loguru import logger as _logger
 from dotenv import load_dotenv
 from pydantic.v1 import BaseSettings
-from functools import cached_property
 from constants.prox_type import ProxyType
 import socks
 from schemes.proxy import Proxy
@@ -25,7 +24,6 @@ class Settings(BaseSettings):
 settings = Settings()  # type: ignore
 
 
-@cached_property
 def PROXY_LIST() -> None | list[Proxy]:
     if settings.USE_PROXY:
         proxies: list[Proxy] = []
@@ -36,7 +34,7 @@ def PROXY_LIST() -> None | list[Proxy]:
                 if not line:
                     continue
                 scheme, rest = line.split("://")
-                host, port, user, pwd = rest.split(":")
+                host, port, pwd, user = rest.split(":")
                 link = f"{host}:{port}"
                 try:
                     proxy_type = ProxyType[scheme.upper()]
@@ -48,12 +46,14 @@ def PROXY_LIST() -> None | list[Proxy]:
     return None
 
 
-@property
+proxies = PROXY_LIST()
+
+
 def GET_RANDOM_PROXY():
     if PROXY_LIST:
-        _data = random.choice(PROXY_LIST)
-
-        return socks.HTTP, _data.link, _data.user, _data.pwd
+        _data = random.choice(proxies)
+        host, port = _data.link.split(":")
+        return socks.SOCKS5, host, int(port), True, _data.user, _data.pwd
     else:
         return None
 
@@ -72,3 +72,5 @@ _logger.add(
 )
 
 logger = _logger.bind(name='app')
+
+print(f"SETTINGS PROXY USE {settings.USE_PROXY}")

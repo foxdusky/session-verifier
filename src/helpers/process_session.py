@@ -13,7 +13,11 @@ from schemes.processing_result import ProcessingResult
 
 
 async def _process_session(phone: str, api_id: int, api_hash: str) -> ProcessingResult | None:
-    proxy = GET_RANDOM_PROXY
+    proxy = None
+    if settings.USE_PROXY:
+        proxy = GET_RANDOM_PROXY()
+    logger.info(f"{proxy=}")
+
     session_renewed = False
     spam_blocked = False
     old_session_path: str = os.path.join(settings.TEMP_DIR, phone + ".session")  # type: ignore
@@ -23,15 +27,21 @@ async def _process_session(phone: str, api_id: int, api_hash: str) -> Processing
         logger.info(f"[!] Нет session файла для {phone}, пропуск.")
         return None
     try:
-        client1 = TelegramClient(old_session_path, api_id, api_hash)
+        if proxy:
+            client1 = TelegramClient(old_session_path, api_id, api_hash, proxy=proxy)
+        else:
+            client1 = TelegramClient(old_session_path, api_id, api_hash, )
+
         await client1.connect()
 
         if not await client1.is_user_authorized():
             logger.info(f"[!] Сессия {phone} невалидна.")
             await client1.disconnect()
             return None
-
-        client2 = TelegramClient(new_session_name, api_id, api_hash)
+        if proxy:
+            client2 = TelegramClient(old_session_path, api_id, api_hash, proxy=proxy)
+        else:
+            client2 = TelegramClient(old_session_path, api_id, api_hash, )
         await client2.connect()
         if not client2.is_connected():
             logger.info(f"[❌] client2 не подключён для {phone}")
