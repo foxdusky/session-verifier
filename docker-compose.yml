@@ -6,9 +6,9 @@ services:
         build:
             context: .
             dockerfile: ./Dockerfile
-        depends_on:
-            - db
-        command: bash -c python3 /app/src/main.py
+        command: bash -c "
+            cd /app/src
+            && python3 /app/src/main.py"
         restart: always
         env_file:
             - .env

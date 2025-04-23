@@ -16,7 +16,8 @@ docs/
 
 # Mkdocs
 site/
-
+./temp
+./sessions
 /*.json
 
 # TO-DO files
